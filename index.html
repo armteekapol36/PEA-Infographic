@@ -278,6 +278,10 @@ textarea { resize: vertical; min-height: 64px; line-height: 1.45; }
 <header class="bar">
   <h1>อินโฟกราฟฟิกการปฏิบัติงาน กบษ.<small>กรอกข้อมูล ใส่รูป แล้วบันทึกเป็นไฟล์ภาพ</small></h1>
   <button class="btn" id="btnReset" type="button">เริ่มใหม่</button>
+  <button class="btn" id="btnSmall" type="button" title="ไฟล์ JPG ขนาดไม่เกิน 1 MB เหมาะสำหรับส่งงานทั่วไป">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"></path></svg>
+    ไฟล์เล็ก (JPG)
+  </button>
   <button class="btn primary" id="btnExport" type="button">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"></path></svg>
     บันทึกเป็นรูป PNG
@@ -945,19 +949,37 @@ function getDownloads() {
   if (!downloadsP) downloadsP = (window.claude && window.claude.use) ? window.claude.use('downloads').catch(() => null) : Promise.resolve(null);
   return downloadsP;
 }
-const btnExport = $('#btnExport');
-btnExport.addEventListener('click', async () => {
+const btnExport = $('#btnExport'); const btnSmall = $('#btnSmall');
+const MAX_SMALL = 1000 * 1000; /* 1 MB */
+async function makeSmall() {
+  const canvas = await window.htmlToImage.toCanvas(poster, { width: 1024, height: 1536, pixelRatio: 1, fontEmbedCSS: FONT_CSS, cacheBust: false, backgroundColor: '#ffffff', style: { transform: 'none' } });
+  const toBlob = (c, q) => new Promise(res => c.toBlob(res, 'image/jpeg', q));
+  let scale = 1;
+  for (let round = 0; round < 4; round++) {
+    let c = canvas;
+    if (scale < 1) { c = document.createElement('canvas'); c.width = Math.round(canvas.width * scale); c.height = Math.round(canvas.height * scale); c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height); }
+    for (const q of [0.88, 0.8, 0.72, 0.64, 0.56, 0.48]) {
+      const b = await toBlob(c, q);
+      if (b && b.size <= MAX_SMALL * 0.95) return b;
+    }
+    scale *= 0.85;
+  }
+  return toBlob(canvas, 0.4);
+}
+async function exportImage(small) {
   if (!window.htmlToImage) { setStatus('ตัวสร้างรูปยังโหลดไม่เสร็จ ลองใหม่อีกครั้งในไม่กี่วินาที', 'err'); return; }
-  btnExport.disabled = true; setStatus('กำลังสร้างรูปโปสเตอร์...');
+  btnExport.disabled = true; btnSmall.disabled = true; setStatus('กำลังสร้างรูปโปสเตอร์...');
   try {
     if (document.fonts && document.fonts.ready) await document.fonts.ready;
-    const opts = { width: 1024, height: 1536, pixelRatio: 2, fontEmbedCSS: FONT_CSS, cacheBust: false, style: { transform: 'none' } };
-    const blob = await window.htmlToImage.toBlob(poster, opts);
+    let blob;
+    if (small) blob = await makeSmall();
+    else blob = await window.htmlToImage.toBlob(poster, { width: 1024, height: 1536, pixelRatio: 2, fontEmbedCSS: FONT_CSS, cacheBust: false, style: { transform: 'none' } });
     if (!blob) throw new Error('empty');
-    const name = 'poster-' + (state.date || 'pea') + '.png';
+    const name = 'poster-' + (state.date || 'pea') + (small ? '-small.jpg' : '.png');
     const dl = await getDownloads();
+    const done = small ? 'บันทึกรูปแล้ว (ไฟล์เล็ก ' + Math.round(blob.size / 1024) + ' KB)' : 'บันทึกรูปแล้ว';
     if (dl) {
-      try { await dl.save({ filename: name, data: blob }); setStatus('บันทึกรูปแล้ว', 'ok'); }
+      try { await dl.save({ filename: name, data: blob }); setStatus(done, 'ok'); }
       catch (err) {
         if (err && err.code === 'declined') setStatus('ยกเลิกการบันทึก', '');
         else showOverlay(blob);
@@ -969,13 +991,15 @@ btnExport.addEventListener('click', async () => {
       else {
         const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = name;
         document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
-        setStatus('บันทึกรูปแล้ว (ดูในโฟลเดอร์ดาวน์โหลด)', 'ok');
+        setStatus(done + ' (ดูในโฟลเดอร์ดาวน์โหลด)', 'ok');
       }
     }
   } catch (e) {
     setStatus('สร้างรูปไม่สำเร็จ ลองกดอีกครั้ง หรือลดจำนวน/ขนาดรูปที่ใส่', 'err');
-  } finally { btnExport.disabled = false; }
-});
+  } finally { btnExport.disabled = false; btnSmall.disabled = false; }
+}
+btnExport.addEventListener('click', () => exportImage(false));
+btnSmall.addEventListener('click', () => exportImage(true));
 let ovUrl = null;
 function showOverlay(blob) {
   if (ovUrl) URL.revokeObjectURL(ovUrl);
