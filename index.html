@@ -549,7 +549,7 @@ function defaults() {
       { icon: 'traffic', title: 'การจราจรในพื้นที่', desc: 'ระหว่างปฏิบัติงาน' },
       { icon: 'weather', title: 'สภาพอากาศ', desc: 'ลม ฝน ฟ้าคะนอง' }
     ],
-    slogan1: '“อุบัติเหตุเป็นศูนย์”', slogan2: 'OK.OK.OK', tagline: 'ไฟฟ้าเพื่อชีวิต\nที่ดีกว่า',
+    slogan1: '“อุบัติเหตุเป็นศูนย์”', slogan2: 'OK.OK.OK', tagline: 'ทันโลก บริการดี\nมีคุณธรรม',
     tags: '#วิเคราะห์จุดอันตราย #ปฏิบัติงานตามขั้นตอน #อุบัติเหตุเป็นศูนย์',
     theme: 'purple', accent: 'orange', mascot: 'ok', mascotCustom: '',
     photos: Object.assign({}, SAMPLE), sample: { hero: true, s1: true, s2: true, s3: true, s4: true, s5: true }
@@ -572,6 +572,7 @@ try {
 
 if (Array.isArray(state.hazards)) state.hazards.forEach(h => { if (h && h.title === 'ไฟ AC 220 V ในตู้' && h.desc === 'ดูด') { h.title = 'ไฟ AC 220 V ในตู้คอนโทรล'; h.desc = 'ไฟดูด / เปลวอาร์ค'; } });
 if (state.titleB === 'บำรุงรักษาอุปกรณ์') state.titleB = 'บำรุงรักษาอุปกรณ์ระบบไฟฟ้า';
+if (state.tagline === 'ไฟฟ้าเพื่อชีวิต\nที่ดีกว่า') state.tagline = 'ทันโลก บริการดี\nมีคุณธรรม';
 if (state.titleCAuto) state.titleC = '';
 delete state.titleCAuto;
 if (state.mascot === 'custom' && !state.mascotCustom) state.mascot = 'ok';
