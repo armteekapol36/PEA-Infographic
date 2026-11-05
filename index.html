@@ -471,6 +471,7 @@ textarea { resize: vertical; min-height: 64px; line-height: 1.45; }
   <div class="overlay-box" role="dialog" aria-modal="true" aria-labelledby="ovTitle">
     <p id="ovTitle"><b>รูปโปสเตอร์พร้อมแล้ว</b></p>
     <p style="font-size:14px;color:var(--muted)">กดค้างที่รูป (มือถือ) หรือคลิกขวาแล้วเลือก “บันทึกรูปภาพ” (คอมพิวเตอร์)</p>
+    <p style="font-size:13px;color:var(--muted)">ถ้าเปิดจากแอป LINE แล้วบันทึกไม่ได้ ให้กดเมนู ⋮ แล้วเลือก “เปิดในเบราว์เซอร์อื่น / Open in browser” (Chrome หรือ Safari)</p>
     <img id="ovImg" alt="โปสเตอร์ที่สร้างแล้ว">
     <button class="btn" type="button" id="ovClose">ปิด</button>
   </div>
@@ -963,7 +964,8 @@ btnExport.addEventListener('click', async () => {
       }
     } else {
       const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-      if (ios) showOverlay(blob);
+      const inApp = /Line\/|FBAN|FBAV|FB_IAB|Instagram|MicroMessenger/i.test(navigator.userAgent);
+      if (ios || inApp) showOverlay(blob);
       else {
         const u = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = u; a.download = name;
         document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 4000);
